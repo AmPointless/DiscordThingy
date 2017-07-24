@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/DiscordBotTypeScript.iml" filepath="$PROJECT_DIR$/.idea/DiscordBotTypeScript.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/DiscordThingy.iml" filepath="$PROJECT_DIR$/.idea/DiscordThingy.iml" />
+    </modules>
+  </component>
+</project>

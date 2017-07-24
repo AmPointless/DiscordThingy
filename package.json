@@ -1,0 +1,35 @@
+{
+  "name": "discordthingy",
+  "version": "0.3.7",
+  "description": "A discord framework. But it's in typescript. That's about it.",
+  "repository": "PointlessDev/DiscordThingy",
+  "bugs": "https://github.com/PointlessDev/DiscordThingy/issues",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "scripts": {
+    "test": "tslint -c tslint.json 'src/**/*.ts'",
+    "lint": "tslint -c tslint.json 'src/**/*.ts'",
+    "build": "tsc",
+    "prepare": "tsc"
+  },
+  "keywords": [
+    "discord",
+    "discordapp"
+  ],
+  "engines": {
+    "node": ">=8.0.0"
+  },
+  "author": "Pointless",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^11.1.0",
+    "reflect-metadata": "^0.1.10"
+  },
+  "devDependencies": {
+    "@types/node": "^8.0.13",
+    "tslint": "^5.5.0",
+    "tslint-eslint-rules": "^4.1.1",
+    "typescript": "^2.4.1",
+    "vrsource-tslint-rules": "^5.1.0"
+  }
+}
