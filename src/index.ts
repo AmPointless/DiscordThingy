@@ -9,7 +9,7 @@ import Authorization from './authorization';
 import Arguments from './arguments';
 import Responder from './responder';
 import {CommandConstructionData} from './command-loader';
-
+import * as DefaultMessageParser from './default-message-parser';
 
 const VERSION = require('../package.json').version;
 
@@ -22,5 +22,6 @@ export {
   Authorization,
   Arguments,
   Responder,
+  DefaultMessageParser,
   VERSION
 };

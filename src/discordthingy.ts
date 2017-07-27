@@ -31,12 +31,16 @@ export interface CommandHandler {
   (message: Message, args: Arguments): Promise<void>;
 } // The object on a command class, gets passed the message and does magic
 
+export interface Authorizer {
+  (message: Message, args: Arguments): boolean;
+}
 
 export interface InternalCommandMetadata {
   key: string;
   name: string;
   aliases: string[];
   triggers: string[];
+  authorization?: Authorizer;
   parent: CommandClass | CommandObject;
 }
 
@@ -135,6 +139,7 @@ class DiscordThingy {
     if(!matchingCommands) return;
 
     for (let command of matchingCommands){
+      if(command.authorization && !command.authorization(message, args)) return;
       let returnValue = (command.parent as any)[command.key](message, args);
       returnValue && typeof returnValue.catch === 'function' && returnValue.catch((e: Error) => console.error(e.stack));
     }

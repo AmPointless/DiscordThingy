@@ -4,16 +4,16 @@
 import {Message} from 'discord.js';
 import {ParsedMessage} from './discordthingy';
 
-export default function defaultMessageParser(message: Message): ParsedMessage {
-  const INTRO_WORDS = [
-    "hey",
-    "hi",
-    "oi",
-    "hello",
-    "ey",
-    "yo"
-  ];
+export const INTRO_WORDS = [
+  "hey",
+  "hi",
+  "oi",
+  "hello",
+  "ey",
+  "yo"
+];
 
+export function defaultMessageParser(message: Message): ParsedMessage {
   let content = message.content;
   let matchingIntroWord = INTRO_WORDS.find((word) => {
     return content.toLowerCase().startsWith(word);
@@ -41,3 +41,5 @@ export default function defaultMessageParser(message: Message): ParsedMessage {
     args: args
   };
 }
+
+export default defaultMessageParser;

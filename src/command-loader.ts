@@ -24,17 +24,18 @@ export default class CommandLoader{
         fileExports.__esModule &&
         fileExports.default &&
         (typeof fileExports.default === 'function' ||
-        typeof fileExports.defult === 'object') // If it's a esModule that exports a default and it's an object or function
+            (typeof fileExports.default === 'object' && this.isCommandObject(fileExports.default))
+        ) // If it's a esModule that exports a default and it's an object or function
     ) object = fileExports.default;
     else if(
         typeof fileExports === 'function' ||
-        typeof fileExports === 'object'
+        (typeof fileExports === 'object' && this.isCommandObject(fileExports) )
     ) object = fileExports;
-    else throw new Error(`${filepath} does not export anything recognizable`);
+    else return;
 
     if(typeof object === 'function') { // If it's a function, let's assume it's a class
       return this.loadCommandClass(object);
-    } else {
+    } else if(typeof object === 'object') {
       return this.loadCommandObject(object);
     }
   }
@@ -55,6 +56,7 @@ export default class CommandLoader{
         key,
         name: config.name,
         aliases: config.aliases,
+        authorization: config.authorization,
         triggers,
         parent: instance
       };
@@ -65,7 +67,7 @@ export default class CommandLoader{
   }
 
   loadCommandObject(object: CommandObject): true|never {
-    if(!object.name) throw new Error(`Command ${object} doesn\'t have a name!`);
+    if(!object.name) throw new Error(`Command ${JSON.stringify(object)} doesn\'t have a name!`);
     object.aliases = object.aliases || [];
     object.run = object.run || async function(){};
     this.thingy._addCommands([{
@@ -77,6 +79,10 @@ export default class CommandLoader{
     }]);
 
     return true;
+  }
+
+  isCommandObject(object: CommandObject | any): boolean {
+    return typeof object === 'object' && (object.run || object.onload);
   }
 
   getTriggers(...triggers: string[]) {
