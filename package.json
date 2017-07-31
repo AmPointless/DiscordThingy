@@ -1,6 +1,6 @@
 {
   "name": "discordthingy",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "A discord framework. But it's in typescript. That's about it.",
   "repository": "PointlessDev/DiscordThingy",
   "bugs": "https://github.com/PointlessDev/DiscordThingy/issues",
