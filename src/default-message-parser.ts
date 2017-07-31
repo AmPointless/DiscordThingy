@@ -19,7 +19,7 @@ export function defaultMessageParser(message: Message): ParsedMessage {
     return content.toLowerCase().startsWith(word);
   }); // Find an intro word that matches the start of the message, eg, "hey" for command: "hey @bot ..."
   if (!matchingIntroWord) return; // If the command doesn't have a matching intro word, ignore
-  let words = message.content.substr(matchingIntroWord.length + 1).split(' '); // Remove the intro word from the start, and split
+  let words = message.content.substr(matchingIntroWord.length + 1).trim().split(' '); // Remove the intro word from the start, and split
   let introName;
 
   // If the user is triggering themselves, allow me
