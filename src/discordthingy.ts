@@ -25,7 +25,8 @@ export interface CommandObject {
   aliases?: string[];
   authentication?: Symbol;
   category?: string;
-  run: CommandHandler;
+  run?: CommandHandler;
+  initialize?: (data: CommandConstructionData) => Promise<void>;
 }
 export interface CommandHandler {
   (message: Message, args: Arguments): Promise<void>;
@@ -45,7 +46,17 @@ export interface InternalCommandMetadata {
 }
 
 class DiscordThingy {
-  constructor(){
+  public commands: InternalCommandMetadata[] = [];
+  public client: Client;
+  public logChannel: TextChannel|void;
+  public violateToS = false;
+  public caseSensitiveCommands = false;
+  public owner = '';
+
+  private _messageParser: MessageParser = defaultMessageParser; // A drop-in function which parses messages
+  private _commandLoader: CommandLoader;
+
+  constructor() {
     this.client = new Client();
     this._commandLoader = new CommandLoader(this);
 
@@ -67,12 +78,12 @@ class DiscordThingy {
     this.client.on('ready', () => console.log(`Ready as ${this.client.user.tag}`));
   }
 
-  login(token: string): this {
+  public login(token: string): this {
     this.client.login(token);
     return this;
   }
 
-  addCommandDirectory(directory: string): this {
+  public addCommandDirectory(directory: string): this {
     directory = path.resolve(path.dirname(require.main.filename), directory);
 
     fs.readdir(directory, (err, files) => {
@@ -86,12 +97,12 @@ class DiscordThingy {
     return this;
   }
 
-  addCommand(command: string | CommandClass): this {
-    if(typeof command === "string") {
+  public addCommand(command: string | CommandClass): this {
+    if(typeof command === 'string') {
       this._commandLoader.loadCommandFromFile(path.resolve(path.dirname(require.main.filename), command));
-    }else if(typeof command === "function") {
+    }else if(typeof command === 'function') {
       this._commandLoader.loadCommandClass(command);
-    }else if(typeof command === "object") {
+    }else if(typeof command === 'object') {
       this._commandLoader.loadCommandObject(command);
     }else {
       console.error(`Unable to load unrecognised command: ${command}`);
@@ -100,20 +111,20 @@ class DiscordThingy {
     return this;
   }
 
-  addCommands(commands: string[] | CommandClass[]): this {
-    for(let command in commands) {
-      this.addCommand(command);
+  public addCommands(commands: string[] | CommandClass[]): this {
+    for (let command in commands) {
+      if(commands.hasOwnProperty(command)) this.addCommand(command);
     }
 
     return this;
   }
 
-  setOwner(ownerId: string): this {
+  public setOwner(ownerId: string): this {
     this.owner = ownerId;
     return this;
   }
 
-  setLogChannel(channelId: string): this {
+  public setLogChannel(channelId: string): this {
     this.client.on('ready', () => {
       let channel = this.client.channels.get(channelId);
       this.logChannel = channel.type !== 'voice' ? (channel as TextChannel) : null;
@@ -122,14 +133,10 @@ class DiscordThingy {
     return this;
   }
 
-  setMessageParser(newParser: MessageParser): this {
+  public setMessageParser(newParser: MessageParser): this {
     this._messageParser = newParser;
 
     return this;
-  }
-
-  _addCommands(data: InternalCommandMetadata[]): void {
-    this.commands.push(...data);
   }
 
   private _runMatchingCommands(message: Message, args: Arguments): void {
@@ -139,21 +146,12 @@ class DiscordThingy {
     if(!matchingCommands) return;
 
     for (let command of matchingCommands){
-      if(command.authorization && !command.authorization(message, args)) return;
       let returnValue = (command.parent as any)[command.key](message, args);
-      returnValue && typeof returnValue.catch === 'function' && returnValue.catch((e: Error) => console.error(e.stack));
+      if(returnValue && typeof returnValue.catch === 'function') {
+         returnValue.catch((e: Error) => console.error(e.stack));
+      }
     }
   }
-
-  private _messageParser: MessageParser = defaultMessageParser; // A drop-in function which parses messages
-  private _commandLoader: CommandLoader;
-  private commands: InternalCommandMetadata[] = [];
-
-  client: Client;
-  logChannel: TextChannel|void;
-  violateToS = false;
-  caseSensitiveCommands = false;
-  owner = "";
 }
 
 export default DiscordThingy;

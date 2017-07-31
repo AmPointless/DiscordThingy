@@ -12,8 +12,9 @@ class Arguments extends Array<string> {
   ) {
     super(...(args || []));
   }
-  contentFrom(position: number): string {
-    return this.slice(position).join(" ");
+
+  public contentFrom(position: number): string {
+    return this.slice(position).join(' ');
   }
 
 }

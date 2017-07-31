@@ -24,18 +24,23 @@ export default function Command(config: string|CommandConfig) {
     Reflect.defineMetadata(CommandListSymbol, programList, target);
 
     // Add metadata determining how/when to run the command
-    if(typeof config === 'string')
+    if(typeof config === 'string') {
       config = {name: config};
+    }
 
     if(typeof config.authorization === 'function') {
         descriptor.value = async (message: Message, args: Arguments): Promise<void> => {
-          if(await (config as CommandConfig).authorization(message, args))
+          if(await (config as CommandConfig).authorization(message, args)) {
             originalHandler(message, args);
+          }
         };
-    } else if(config.authorization) throw new Error('Authorization checker must be a function!');
+    } else if(config.authorization) {
+      throw new Error('Authorization checker must be a function!');
+    }
 
-    if(typeof config.aliases === 'string')
+    if(typeof config.aliases === 'string') {
       config.aliases = [config.aliases];
+    }
 
     Reflect.defineMetadata(CommandSymbol, config, target, propertyKey);
 

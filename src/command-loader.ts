@@ -11,13 +11,14 @@ export interface CommandConstructionData {
   client: Client;
 }
 
-export default class CommandLoader{
+export default class CommandLoader {
   constructor(private thingy: DiscordThingy) {}
 
-  loadCommandFromFile(filepath: string): true|never {
+  public loadCommandFromFile(filepath: string): true|never {
     let fileExports = require(filepath);
-    if(!fileExports)
+    if(!fileExports) {
       throw new Error(`${filepath} does not export anything!`);
+    }
 
     let object: CommandClass|CommandObject;
     if(
@@ -26,24 +27,23 @@ export default class CommandLoader{
         (typeof fileExports.default === 'function' ||
             (typeof fileExports.default === 'object' && this.isCommandObject(fileExports.default))
         ) // If it's a esModule that exports a default and it's an object or function
-    ) object = fileExports.default;
-    else if(
+    ) {
+      object = fileExports.default;
+    } else if(
         typeof fileExports === 'function' ||
-        (typeof fileExports === 'object' && this.isCommandObject(fileExports) )
-    ) object = fileExports;
-    else return;
+        (typeof fileExports === 'object' && this.isCommandObject(fileExports))
+    ) {
+      object = fileExports;
+    } else return;
 
-    if(typeof object === 'function') { // If it's a function, let's assume it's a class
-      return this.loadCommandClass(object);
-    } else if(typeof object === 'object') {
-      return this.loadCommandObject(object);
-    }
+    if(typeof object === 'function') this.loadCommandClass(object); // If it's a function, let's assume it's a class
+    else if(typeof object === 'object') this.loadCommandObject(object);
   }
 
-  loadCommandClass(construc: CommandClass): true|never {
+  public loadCommandClass(construc: CommandClass): true|never {
     let instance = new construc({
       client: this.thingy.client,
-      responder: this.createResponder(this.thingy.client, construc)
+      responder: this.createResponder(this.thingy.client)
     });
 
     let commandKeys = Reflect.getMetadata(CommandListSymbol, instance);
@@ -53,43 +53,59 @@ export default class CommandLoader{
       let triggers = this.getTriggers(config.name, ...(config.aliases || []));
 
       return {
-        key,
-        name: config.name,
         aliases: config.aliases,
         authorization: config.authorization,
-        triggers,
-        parent: instance
+        key,
+        name: config.name,
+        parent: instance,
+        triggers
       };
     });
-    this.thingy._addCommands(commands);
+    this.thingy.commands.push(...commands);
 
     return true;
   }
 
-  loadCommandObject(object: CommandObject): true|never {
-    if(!object.name) throw new Error(`Command ${JSON.stringify(object)} doesn\'t have a name!`);
+  public loadCommandObject(object: CommandObject): true|never {
+    if(!object.name) {
+      throw new Error(`Command ${JSON.stringify(object)} doesn\'t have a name!`);
+    }
     object.aliases = object.aliases || [];
-    object.run = object.run || async function(){};
-    this.thingy._addCommands([{
-      key: 'run',
-      name: object.name,
-      aliases: object.aliases,
-      triggers: this.getTriggers(object.name, ...object.aliases),
-      parent: object
-    }]);
+
+    if(!object.run) {
+      if(!object.initialize) return;
+
+      let responder = this.createResponder(this.thingy.client);
+      object.initialize({
+        client: this.thingy.client,
+        responder
+      })
+          .catch(e => {
+            responder.logError(e, `Failed to initialise command '${object.name || JSON.stringify(object, null, 1)}'`);
+          });
+
+    }else {
+      this.thingy.commands.push({
+        aliases: object.aliases,
+        key: 'run',
+        name: object.name,
+        parent: object,
+        triggers: this.getTriggers(object.name, ...object.aliases)
+      });
+    }
 
     return true;
   }
 
-  isCommandObject(object: CommandObject | any): boolean {
+  public isCommandObject(object: CommandObject | any): boolean {
     return typeof object === 'object' && (object.run || object.onload);
   }
 
-  getTriggers(...triggers: string[]) {
+  private getTriggers(...triggers: string[]) {
     return this.thingy.caseSensitiveCommands ? triggers : triggers.map(t => t.toLowerCase());
   }
 
-  createResponder(client: Client, construc: CommandClass): Responder {
+  private createResponder(client: Client): Responder {
     return new Responder(this.thingy, client);
   }
 }

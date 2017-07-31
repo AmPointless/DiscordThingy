@@ -8,8 +8,9 @@ export const AuthTypes: string[] = ['OWNER', 'SELF', 'BOT', 'USER'];
 
 function AuthorizationFactory(authType: string) {
   return function(message: Message, args: Arguments, descriptor: void) {
-    if(descriptor)
+    if (descriptor) {
       throw new Error('Authorization is not a decorator!');
+    }
 
     switch(authType.toLowerCase()) {
       case 'self':

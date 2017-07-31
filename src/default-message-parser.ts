@@ -5,12 +5,12 @@ import {Message} from 'discord.js';
 import {ParsedMessage} from './discordthingy';
 
 export const INTRO_WORDS = [
-  "hey",
-  "hi",
-  "oi",
-  "hello",
-  "ey",
-  "yo"
+  'hey',
+  'hi',
+  'oi',
+  'hello',
+  'ey',
+  'yo'
 ];
 
 export function defaultMessageParser(message: Message): ParsedMessage {
@@ -31,14 +31,14 @@ export function defaultMessageParser(message: Message): ParsedMessage {
   if (!introName) return; // If it starts with an intro word, but doesn't invoke a bot, just ignore
 
   let strippedContent = message.content.substr(`${matchingIntroWord} ${introName} `.length).trim(); // Remove the invoking words
-  if (!strippedContent) return; // If it mentions the bot, but doesnt' ask for anything ignore
+  if (!strippedContent) return; // If it mentions the bot, but doesn't ask for anything ignore
 
   // Ok, we have a valid command, return the things
-  let args = strippedContent.split(" ");
+  let args = strippedContent.split(' ');
 
   return {
-    command: this.caseSensitiveCommands ? args[0] : args[0].toLowerCase(),
-    args: args
+    args: args,
+    command: this.caseSensitiveCommands ? args[0] : args[0].toLowerCase()
   };
 }
 
