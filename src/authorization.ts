@@ -5,13 +5,12 @@ import {Message} from 'discord.js';
 import Arguments from './arguments';
 
 export const AuthTypes: string[] = ['OWNER', 'SELF', 'BOT', 'USER'];
+export type AuthTypes = 'OWNER' | 'SELF' | 'BOT' | 'USER';
 
-function AuthorizationFactory(authType: string) {
-  return function(message: Message, args: Arguments, descriptor: void) {
-    if (descriptor) {
-      throw new Error('Authorization is not a decorator!');
-    }
+export type Authorizer = (message: Message, args: Arguments) => boolean;
 
+function AuthorizationFactory(authType: string): Authorizer {
+  return function(message: Message, args: Arguments): boolean {
     switch(authType.toLowerCase()) {
       case 'self':
         return message.author.id === message.client.user.id;
@@ -29,7 +28,7 @@ function AuthorizationFactory(authType: string) {
 
 
 let Authorization: {
-  [propName: string]: any
+  [propName: string]: Authorizer
 } = {};
 
 AuthTypes.forEach(type => {

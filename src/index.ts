@@ -2,26 +2,22 @@
  * Created by Pointless on 13/07/17.
  */
 import 'reflect-metadata';
-import DiscordThingy, {CommandClass} from './discordthingy';
-import Category from './category';
-import Command from './command';
+import DiscordThingy from './discordthingy';
+import Command, {CommandClass} from './command';
 import Authorization from './authorization';
 import Arguments from './arguments';
 import Responder from './responder';
-import {CommandConstructionData} from './command-loader';
-import * as DefaultMessageParser from './default-message-parser';
+import defaultMessageParser from './default-message-parser';
 
 const VERSION = require('../package.json').version;
 
 export {
   DiscordThingy,
-  Category,
   Command,
   CommandClass,
-  CommandConstructionData,
   Authorization,
   Arguments,
   Responder,
-  DefaultMessageParser,
+  defaultMessageParser,
   VERSION
 };

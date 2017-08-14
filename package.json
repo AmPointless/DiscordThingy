@@ -21,11 +21,11 @@
   },
   "author": "Pointless",
   "license": "MIT",
-  "peerDependencies": {
-    "discord.js": "^11.1.0"
-  },
   "dependencies": {
     "reflect-metadata": "^0.1.10"
+  },
+  "peerDependencies": {
+    "discord.js": "^11.1.0"
   },
   "devDependencies": {
     "@types/node": "^8.0.13",

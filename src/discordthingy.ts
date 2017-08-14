@@ -1,12 +1,12 @@
 /**
  * Created by Pointless on 15/07/17.
  */
-import {Client, TextChannel, Message} from 'discord.js';
-import * as path from 'path';
-import * as fs from 'fs';
+import {Client, TextChannel, Message, ClientOptions} from 'discord.js';
 import Arguments from './arguments';
-import CommandLoader, {CommandConstructionData} from './command-loader';
+import CommandLoader, {CommandResolvable} from './command-loader';
 import defaultMessageParser from './default-message-parser';
+import Responder from './responder';
+import {Authorizer} from './authorization';
 
 export interface MessageParser {
   (message: Message): ParsedMessage|void;
@@ -17,113 +17,79 @@ export interface ParsedMessage { // The object a MessageParser should return
 }
 
 export interface CommandClass {
-  new(data: CommandConstructionData): CommandClass;
+  new(thingy: DiscordThingy): any;
   [propName: string]: CommandHandler|any;
 } // The class a command file should export
+
 export interface CommandObject {
   name: string;
   aliases?: string[];
   authentication?: Symbol;
   category?: string;
   run?: CommandHandler;
-  initialize?: (data: CommandConstructionData) => Promise<void>;
+  initialize?: (thingy: DiscordThingy) => Promise<void>;
 }
 export interface CommandHandler {
   (message: Message, args: Arguments): Promise<void>;
 } // The object on a command class, gets passed the message and does magic
 
-export interface Authorizer {
-  (message: Message, args: Arguments): boolean;
-}
-
 export interface InternalCommandMetadata {
   key: string;
   name: string;
-  aliases: string[];
   triggers: string[];
   authorization?: Authorizer;
-  parent: CommandClass | CommandObject;
+  run: CommandHandler
 }
 
-class DiscordThingy {
+export class DiscordThingy {
   public commands: InternalCommandMetadata[] = [];
   public client: Client;
   public logChannel: TextChannel|void;
   public violateToS = false;
   public caseSensitiveCommands = false;
-  public owner = '';
+  public owner: string;
+  public responder: Responder;
 
   private _messageParser: MessageParser = defaultMessageParser; // A drop-in function which parses messages
   private _commandLoader: CommandLoader;
 
-  constructor() {
-    this.client = new Client();
+  constructor(clientOptions?: ClientOptions) {
+    this.client = new Client(clientOptions);
     this._commandLoader = new CommandLoader(this);
+    this.responder = new Responder(this);
 
-    this.client.on('message', message => {
-      if(
-          !this.violateToS && // If we aren't *planning on* violating the ToS,
-          !this.client.user.bot && // and the client isn't a bot
-          message.author.id !== this.client.user.id // and the author isn't the client
-      ) return; // Ignore the message
 
-      let parsedMessage = this._messageParser(message);
-      if(!parsedMessage) return; // Didn't match, ignore
-
-      let args = new Arguments(message, parsedMessage.command, parsedMessage.args, this.owner === message.author.id);
-
-      this._runMatchingCommands(message, args);
-    });
+    this.client.on('message', m => this._handleMessage(m));
 
     this.client.on('ready', () => console.log(`Ready as ${this.client.user.tag}`));
   }
 
+  // Command adding functions
+  public addCommand(command: CommandResolvable): this {
+    this._commandLoader.load(command);
+
+    return this;
+  }
+  public addCommands(commands: CommandResolvable[]): this {
+    this._commandLoader.load(commands);
+
+    return this;
+  }
+  public addCommandDirectory(directory: string): this {
+    this._commandLoader.load(directory);
+
+    return this;
+  }
+
+  // Config setting functions
   public login(token: string): this {
     this.client.login(token);
     return this;
   }
-
-  public addCommandDirectory(directory: string): this {
-    directory = path.resolve(path.dirname(require.main.filename), directory);
-
-    fs.readdir(directory, (err, files) => {
-      files.forEach(file => {
-        if(!file.endsWith('.js')) return; // Only load js files, because running sourcemaps is not fun
-
-        this._commandLoader.loadCommandFromFile(`${directory}/${file}`);
-      });
-    });
-
-    return this;
-  }
-
-  public addCommand(command: string | CommandClass): this {
-    if(typeof command === 'string') {
-      this._commandLoader.loadCommandFromFile(path.resolve(path.dirname(require.main.filename), command));
-    }else if(typeof command === 'function') {
-      this._commandLoader.loadCommandClass(command);
-    }else if(typeof command === 'object') {
-      this._commandLoader.loadCommandObject(command);
-    }else {
-      console.error(`Unable to load unrecognised command: ${command}`);
-    }
-
-    return this;
-  }
-
-  public addCommands(commands: string[] | CommandClass[]): this {
-    for (let command in commands) {
-      if(commands.hasOwnProperty(command)) this.addCommand(command);
-    }
-
-    return this;
-  }
-
   public setOwner(ownerId: string): this {
     this.owner = ownerId;
     return this;
   }
-
   public setLogChannel(channelId: string): this {
     this.client.on('ready', () => {
       let channel = this.client.channels.get(channelId);
@@ -132,7 +98,6 @@ class DiscordThingy {
 
     return this;
   }
-
   public setMessageParser(newParser: MessageParser): this {
     this._messageParser = newParser;
 
@@ -146,11 +111,25 @@ class DiscordThingy {
     if(!matchingCommands) return;
 
     for (let command of matchingCommands){
-      let returnValue = (command.parent as any)[command.key](message, args);
+      let returnValue = command.run(message, args);
       if(returnValue && typeof returnValue.catch === 'function') {
          returnValue.catch((e: Error) => console.error(e.stack));
       }
     }
+  }
+  private async _handleMessage(message: Message): Promise<void> {
+    if(
+        !this.violateToS && // If we aren't *planning on* violating the ToS,
+        !this.client.user.bot && // and the client isn't a bot
+        message.author.id !== this.client.user.id // and the author isn't the client
+    ) return; // Ignore the message
+
+    let parsedMessage = this._messageParser(message);
+    if(!parsedMessage || !parsedMessage.command) return; // Didn't match, ignore
+
+    let args = new Arguments(message, parsedMessage.command, parsedMessage.args, this);
+
+    this._runMatchingCommands(message, args);
   }
 }
 

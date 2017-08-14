@@ -1,60 +1,77 @@
 /**
  * Created by Pointless on 20/07/17.
  */
-import {Client, Message, TextChannel, GuildMember, User, Channel} from 'discord.js';
+import {Client, Message, TextChannel, GuildMember, User, Channel, MessageReaction} from 'discord.js';
 import DiscordThingy from './discordthingy';
 
+let wrongLogChannelPermsWarn = false;
+
 export default class Responder {
-  constructor(private thingy: DiscordThingy, private client: Client) {}
+  private client: Client;
 
-  public fail(message: Message, reason?: string): void {
+  constructor(private thingy: DiscordThingy) {
+    this.client = thingy.client;
+  }
+
+  public async fail(message: Message, reason?: string): Promise<Message|MessageReaction> {
     if(
         (
             !this._hasChannelPerm(message.channel, this.client.user, 'SEND_MESSAGES') ||
             !reason
         ) &&
         this._hasChannelPerm(message.channel, this.client.user, 'ADD_REACTIONS')
-    ) {
-      message.react('🔥');
-    } else {
-      message.channel.send({embed: {
+    ) { // If messages can't be sent, or there isn't a reason, and can react, react
+      return message.react('🔥');
+    } else if(this._hasChannelPerm(message.channel, this.client.user, 'SEND_MESSAGES')) {
+      return message.channel.send({embed: {
         color: 0xF44336,
         description: `:x: *${reason}*`
-      }});
+      }}) as Promise<Message>;
     }
   }
 
-  public succeed(message: Message, reason?: string): void {
+  public async succeed(message: Message, reason?: string): Promise<Message|MessageReaction> {
     if(
         (
             !this._hasChannelPerm(message.channel, this.client.user, 'SEND_MESSAGES') ||
             !reason
         ) &&
         this._hasChannelPerm(message.channel, this.client.user, 'ADD_REACTIONS')
-    ) {
-      message.react('✅');
-    } else {
-      message.channel.send({embed: {
-        color: 0xF44336,
-        description: `:x: *${reason}*`
-      }});
+    ) { // If messages can't be sent, or there isn't a reason, and can react, react
+      return message.react('✅');
+    } else if(this._hasChannelPerm(message.channel, this.client.user, 'SEND_MESSAGES')) {
+      return message.channel.send({embed: {
+        color: 0x087f23,
+        description: `:white_check_mark: *${reason}*`
+      }}) as Promise<Message>;
     }
   }
 
-  public internalError(message: Message, error: string|Error, info?: string): void {
-    if(this._hasChannelPerm(message.channel, this.client.user, 'ADD_REACTIONS')) message.react('🔥');
-    this.logError(error, info);
-  }
-
-  public rejection(message: Message, info?: string): (error: Error) => void { // Convenience method for handling promise rejections
+  public rejection(message: Message, info?: string): (error: Error) => Promise<MessageReaction|void> {
     return (error: Error) => {
-      this.internalError(message, error, info);
+      return this.internalError(message, error, info);
     };
+  }  // Convenience method for handling promise rejections
+
+  public async internalError(error: string|Error, info?: string): Promise<void>;
+  public async internalError(message: Message, error: string|Error, info?: string): Promise<MessageReaction|void>
+
+  public async internalError(messageOrError: Message|string|Error, errorOrInfo?: string|Error, info?: string): Promise<MessageReaction|void>{
+    if(messageOrError instanceof Message && this._hasChannelPerm(messageOrError.channel, this.client.user, 'ADD_REACTIONS')) {
+      this._logError(errorOrInfo, info);
+      return messageOrError.react('🔥');
+    }else if(messageOrError instanceof Error || typeof errorOrInfo === 'string' ){
+      this._logError(messageOrError as Error|string, errorOrInfo as string);
+    }
   }
 
-  public logError(error: string|Error, info?: string): void {
-    const errorString = typeof error === 'string' ? error : error.stack;
+  private _logError(error: string|Error, info?: string): void {
+    const errorString = typeof error === 'string' ? error : error.stack || error;
     if(!this.thingy.logChannel || !this._hasChannelPerm(this.thingy.logChannel, this.client.user, 'SEND_MESSAGES')) {
+      if(!wrongLogChannelPermsWarn && this.thingy.logChannel){
+        console.error(`[${new Date().toTimeString()}] Permissions for log channel (${this.thingy.logChannel.guild.name}#${this.thingy.logChannel.name}) are incorrect.`)
+        wrongLogChannelPermsWarn = true;
+      }
       return console.error(`[${new Date().toTimeString()}] <ERROR> ${info || ''}\n${errorString}`);
     }
 
@@ -75,11 +92,11 @@ export default class Responder {
       }
     })
         .catch(e => {
-          console.error(`[${new Date().toTimeString()}]Failed to log error in log channel! Because:`, e, '\n\nOriginal Error: ', error);
+          console.error(`[${new Date().toTimeString()}] Failed to log error in log channel! Because:`, e, '\n\nOriginal Error: ', error);
         });
   }
 
-  private _hasChannelPerm(channel: Channel, member: GuildMember|User, perm: string): boolean {
+  private _hasChannelPerm(channel: Channel|void, member: GuildMember|User, perm: string): boolean {
     return channel &&
         channel.type === 'text' &&
         (channel as TextChannel).permissionsFor(member) &&
