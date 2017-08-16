@@ -85,9 +85,9 @@ export default class CommandLoader {
       let triggers = this._getTriggers(config.name, ...(config.aliases || []));
 
       return {
+        authorization: config.authorization,
         name: config.name,
         run: (m: Message, a: Arguments) => instance[key](m, a),
-        authorization: config.authorization,
         triggers
       };
     });

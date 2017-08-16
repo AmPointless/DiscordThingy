@@ -38,7 +38,7 @@ export interface InternalCommandMetadata {
   name: string;
   triggers: string[];
   authorization?: Authorizer;
-  run: CommandHandler
+  run: CommandHandler;
 }
 
 export class DiscordThingy {

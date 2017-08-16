@@ -54,13 +54,17 @@ export default class Responder {
   }  // Convenience method for handling promise rejections
 
   public async internalError(error: string|Error, info?: string): Promise<void>;
-  public async internalError(message: Message, error: string|Error, info?: string): Promise<MessageReaction|void>
+  public async internalError(message: Message, error: string|Error, info?: string): Promise<MessageReaction|void>;
 
-  public async internalError(messageOrError: Message|string|Error, errorOrInfo?: string|Error, info?: string): Promise<MessageReaction|void>{
+  public async internalError(
+      messageOrError: Message|string|Error,
+      errorOrInfo?: string|Error,
+      info?: string
+  ): Promise<MessageReaction|void> {
     if(messageOrError instanceof Message && this._hasChannelPerm(messageOrError.channel, this.client.user, 'ADD_REACTIONS')) {
       this._logError(errorOrInfo, info);
       return messageOrError.react('🔥');
-    }else if(messageOrError instanceof Error || typeof errorOrInfo === 'string' ){
+    }else if(messageOrError instanceof Error || typeof errorOrInfo === 'string' ) {
       this._logError(messageOrError as Error|string, errorOrInfo as string);
     }
   }
@@ -68,8 +72,9 @@ export default class Responder {
   private _logError(error: string|Error, info?: string): void {
     const errorString = typeof error === 'string' ? error : error.stack || error;
     if(!this.thingy.logChannel || !this._hasChannelPerm(this.thingy.logChannel, this.client.user, 'SEND_MESSAGES')) {
-      if(!wrongLogChannelPermsWarn && this.thingy.logChannel){
-        console.error(`[${new Date().toTimeString()}] Permissions for log channel (${this.thingy.logChannel.guild.name}#${this.thingy.logChannel.name}) are incorrect.`)
+      if(!wrongLogChannelPermsWarn && this.thingy.logChannel) {
+        console.error(`[${new Date().toTimeString()}]\
+Permissions for log channel (${this.thingy.logChannel.guild.name}#${this.thingy.logChannel.name}) are incorrect.`);
         wrongLogChannelPermsWarn = true;
       }
       return console.error(`[${new Date().toTimeString()}] <ERROR> ${info || ''}\n${errorString}`);

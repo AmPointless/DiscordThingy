@@ -5,6 +5,8 @@ import {Message} from 'discord.js';
 import DiscordThingy from './discordthingy';
 
 class Arguments extends Array<string> {
+  public isOwner: boolean;
+
   constructor(
       public message: Message,
       public command: string,
@@ -16,12 +18,9 @@ class Arguments extends Array<string> {
     this.isOwner = thingy.owner === message.author.id;
   }
 
-  public isOwner: boolean;
-
   public contentFrom(position: number): string {
     return this.slice(position).join(' ');
   }
-
 }
 
 export default Arguments;

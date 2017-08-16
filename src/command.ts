@@ -22,12 +22,10 @@ export function CommandClass(target: CommandClass) {
 
 export default function Command(config?: string|CommandConfig) {
   return function(target: Object, propertyKey: string, descriptor: TypedPropertyDescriptor<any>): TypedPropertyDescriptor<any> {
-    let originalHandler = descriptor.value;
-
     Reflect.defineMetadata(CommandClassSymbol, true, target);
-    
-    // Register the method as a command handler
-    let programList = Reflect.getMetadata(CommandListSymbol, target);
+
+    let originalHandler = descriptor.value;
+    let programList = Reflect.getMetadata(CommandListSymbol, target); // Register the method as a command handler
     programList
         ? programList.push(propertyKey)
         : programList = [propertyKey];
@@ -38,7 +36,7 @@ export default function Command(config?: string|CommandConfig) {
       config = {name: config};
     }else if(!config) {
       config = {name: propertyKey};
-    }else if(!config.name){
+    }else if(!config.name) {
       config.name = propertyKey;
     }
 
