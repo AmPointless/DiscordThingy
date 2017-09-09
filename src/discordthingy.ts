@@ -41,6 +41,10 @@ export interface InternalCommandMetadata {
   run: CommandHandler;
 }
 
+export interface ThingyOptions {
+  debug?: boolean;
+}
+
 export class DiscordThingy {
   public commands: InternalCommandMetadata[] = [];
   public client: Client;
@@ -49,11 +53,14 @@ export class DiscordThingy {
   public caseSensitiveCommands = false;
   public owner: string;
   public responder: Responder;
+  public debug = false;
 
   private _messageParser: MessageParser = defaultMessageParser; // A drop-in function which parses messages
   private _commandLoader: CommandLoader;
 
-  constructor(clientOptions?: ClientOptions) {
+  constructor(thingyOptions: ThingyOptions = {}, clientOptions?: ClientOptions) {
+    this.debug = thingyOptions.debug === true;
+
     this.client = new Client(clientOptions);
     this._commandLoader = new CommandLoader(this);
     this.responder = new Responder(this);
@@ -109,6 +116,10 @@ export class DiscordThingy {
       return command.triggers.includes(this.caseSensitiveCommands ? args.command : args.command.toLowerCase());
     });
     if(!matchingCommands) return;
+
+    if(this.debug) {
+      console.log(`[${new Date().toTimeString()}] Firing command '${args.command}'. ${matchingCommands.length} handlers triggered`);
+    }
 
     for (let command of matchingCommands){
       let returnValue = command.run(message, args);

@@ -10,7 +10,7 @@ class Arguments extends Array<string> {
   constructor(
       public message: Message,
       public command: string,
-      args: string[],
+      private args: string[],
       public thingy: DiscordThingy,
   ) {
     super(...(args || []));
@@ -19,7 +19,7 @@ class Arguments extends Array<string> {
   }
 
   public contentFrom(position: number): string {
-    return this.slice(position).join(' ');
+    return this.args.slice(position).join(' ');
   }
 }
 

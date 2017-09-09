@@ -17,8 +17,12 @@ export default class CommandLoader {
     if(!Array.isArray(arg)) arg = [arg];
 
     arg.forEach(resolvable => {
+
       if(typeof resolvable === 'string') {
         resolvable = path.resolve(path.dirname(require.main.filename), resolvable);
+        if(this.thingy.debug) {
+          console.log(`[${new Date().toTimeString()}] Loading ${fs.statSync(resolvable).isDirectory() ? 'directory' : 'file'} '${resolvable}'`);
+        }
         let stat = fs.statSync(resolvable);
         if(stat.isDirectory()) {
           this._loadDirectory(resolvable);
@@ -35,10 +39,9 @@ export default class CommandLoader {
 
   private _loadDirectory(dir: string) {
     fs.readdir(dir, (err, files) => {
-      // if(err) reject(err);
-
-      files.map(file => {
+      files.forEach(file => {
         if(!file.endsWith('.js')) return; // Only load js files, because running sourcemaps is not fun
+        if(this.thingy.debug) console.log(`[${new Date().toTimeString()}] Loading file ${dir}/${file}`);
 
         return this._loadFile(`${dir}/${file}`);
       });
@@ -48,8 +51,11 @@ export default class CommandLoader {
   private _loadFile(file: string) {
     let fileExports = require(file);
     if(!fileExports) {
-      throw new Error(`${file} does not export anything!`);
-    }
+      if(this.thingy.debug) {
+        console.log(`[${new Date().toTimeString()}] File ${file} does not export anything! Skipping...`);
+      }
+      return;
+    } // Just ignore it
 
     let object: CommandClass|CommandObject;
     if(
@@ -57,13 +63,13 @@ export default class CommandLoader {
         fileExports.default &&
         (
             typeof fileExports.default === 'function' ||
-            (typeof fileExports.default === 'object' && this._isCommandObject(fileExports.default))
+            this._isCommandObject(fileExports.default)
         ) // If it's a esModule that exports a default and it's an object or function
     ) {
       object = fileExports.default;
     } else if(
         typeof fileExports === 'function' ||
-        (typeof fileExports === 'object' && this._isCommandObject(fileExports))
+        this._isCommandObject(fileExports)
     ) {
       object = fileExports;
     } else return;
@@ -73,7 +79,7 @@ export default class CommandLoader {
   }
 
   private _loadClass(commandClass: CommandClass) {
-    if(!Reflect.getMetadata(CommandClassSymbol, commandClass)) return;
+    if(!Reflect.getMetadata(CommandClassSymbol, commandClass.prototype)) return;
 
     let instance = new commandClass(this.thingy);
 
