@@ -21,7 +21,8 @@ export default class CommandLoader {
       if(typeof resolvable === 'string') {
         resolvable = path.resolve(path.dirname(require.main.filename), resolvable);
         if(this.thingy.debug) {
-          console.log(`[${new Date().toTimeString()}] Loading ${fs.statSync(resolvable).isDirectory() ? 'directory' : 'file'} '${resolvable}'`);
+          console.log(`[${new Date().toTimeString()}] \
+Loading ${fs.statSync(resolvable).isDirectory() ? 'directory' : 'file'} '${resolvable}'`);
         }
         let stat = fs.statSync(resolvable);
         if(stat.isDirectory()) {
